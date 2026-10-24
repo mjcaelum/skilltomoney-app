@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>스킬투머니 · 원데이 강좌</title>
+<style>
+:root{color-scheme:dark;--navy:#102238;--gold:#e9bf69;--muted:#b8c6d5}*{box-sizing:border-box}body{margin:0;background:var(--navy);color:#f5f7fa;font:17px/1.7 "Malgun Gothic",sans-serif}main{max-width:760px;margin:auto;padding:56px 24px}h1{font-size:42px;color:var(--gold);margin:0}h2{font-size:28px;line-height:1.4}p{color:var(--muted)}article{margin:38px 0;padding:30px;background:#182f49;border:1px solid #526176;border-radius:16px}.tag{display:inline-block;background:#293f55;border-radius:5px;padding:2px 10px;margin:0 5px 5px 0;font-size:14px}button,a.button{display:inline-block;border:0;border-radius:8px;background:var(--gold);color:#142238;padding:12px 18px;font:inherit;font-weight:bold;cursor:pointer;text-decoration:none;min-height:48px}input{width:90px;font:inherit;padding:10px;border-radius:6px;border:1px solid #8292a5;background:#102238;color:white}form{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:24px}output{display:block;margin-top:16px;white-space:pre-line}.error{color:#ffaaa5}.discount{color:#96e4b3}a{color:var(--gold)}:focus-visible{outline:3px solid white;outline-offset:4px}nav{display:flex;gap:18px;flex-wrap:wrap}footer{margin-top:40px;border-top:1px solid #526176;padding-top:24px}@media(max-width:480px){main{padding:30px 18px}article{padding:22px}h1{font-size:34px}}
+</style>
+<main><header><h1>스킬투머니</h1><p>배운 기술을 돈으로, 원데이 강좌 플랫폼</p></header>
+<article><h2>AI 자동화 원데이 강좌</h2><span class="tag">초보 환영</span><span class="tag">2시간</span><p>반복하는 일을 줄이고 나만의 AI 자동화를 만들어 보는 시간.</p><p>2026년 11월 7일 토요일 오후 2시<br>수강료 <strong>38,000원</strong><br>정원 8명 · 남은 자리 5석<br><span id="days"></span></p><a class="button" href="#calculator">예약 신청하기</a>
+<form id="calculator"><label for="people">인원</label><input id="people" name="people" type="number" min="1" step="1" value="3" required><button>계산하기</button></form><output id="result" aria-live="polite"></output></article>
+<section><h2>나도 가르칠 수 있는 기술이 있다면?</h2><button type="button" onclick="document.getElementById('teacher').hidden=false">내 기술로 강좌 열기</button><p id="teacher" hidden>강좌 주제, 대상, 수업 시간과 준비물을 정리해 주세요. 강사 모집 접수는 아직 준비 중입니다.</p></section>
+<footer><nav><a href="lab.html">2장 실습실</a><a href="lab03.html">3장 실습실</a></nav></footer></main>
+<script>
+const price=38000, cname="AI 자동화", seat=8, booked=3;
+const now=new Date(), today=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate());
+const days=Math.ceil((Date.UTC(2026,10,7)-today)/86400000);
+document.getElementById('days').textContent=days>=0?`강좌까지 ${days}일`:'종료된 강좌입니다';
+document.getElementById('calculator').onsubmit=event=>{
+event.preventDefault();const people=Number(document.getElementById('people').value),result=document.getElementById('result');result.replaceChildren();result.className='';
+if(!Number.isInteger(people)||people<1){result.className='error';result.textContent='인원을 1 이상의 정수로 입력하세요';return}
+if(booked+people>seat){result.className='error';result.textContent=`남은 자리는 ${seat-booked}석입니다`;return}
+if(days<0){result.className='error';result.textContent='종료된 강좌입니다';return}
+let total=price*people;const original=total,discount=days>=14?20:days>=7?10:0;
+total-=Math.floor(total*discount/100);if(people>=4)total-=5000;
+result.append(`${cname} 강좌 ${people}명 신청\n`);
+if(total!==original){const before=document.createElement('del');before.textContent=original.toLocaleString('ko-KR')+'원';result.append(before,'\n')}
+result.append(`결제 금액: ${total.toLocaleString('ko-KR')}원`);
+const badges=document.createElement('div');badges.className='discount';badges.textContent=[discount?`얼리버드 ${discount}% 할인`:'',people>=4?'단체 5,000원 할인':''].filter(Boolean).join(' · ');result.append(badges);
+};
+</script></html>
