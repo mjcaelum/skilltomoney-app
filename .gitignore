@@ -6,3 +6,5 @@ out/
 !.env.example
 *.log
 __pycache__/
+
+.playwright-mcp/
