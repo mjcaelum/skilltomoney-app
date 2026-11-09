@@ -1,5 +1,27 @@
 import { courses } from '../../../data/courses.js';
 
+export async function GET() {
+  const url = process.env.SHEET_URL?.trim();
+  const key = process.env.SHEET_KEY?.trim();
+  if(!url || !/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(url) || !key) {
+    return Response.json({error:'좌석 조회 연결을 확인해 주세요. 운영자 설정에 SHEET_URL과 SHEET_KEY가 필요합니다.'},{status:503});
+  }
+  try {
+    const endpoint = new URL(url);
+    endpoint.searchParams.set('key',key);
+    const response = await fetch(endpoint,{signal:AbortSignal.timeout(20000),cache:'no-store'});
+    if(!response.ok) throw new Error('upstream');
+    const rows = await response.json();
+    if(!Array.isArray(rows) || rows.some(row=>!row || typeof row.date!=='string' || typeof row.course!=='string' || !Number.isInteger(row.people) || row.people<1)) throw new Error('upstream');
+    return Response.json(courses.map(course=>({
+      id:course.id,
+      booked:course.booked+rows.filter(row=>row.date===course.date && row.course===course.name).reduce((sum,row)=>sum+row.people,0),
+    })),{headers:{'Cache-Control':'no-store'}});
+  } catch {
+    return Response.json({error:'최신 좌석을 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.'},{status:502});
+  }
+}
+
 export async function POST(request) {
   let body;
   try { body = await request.json(); }

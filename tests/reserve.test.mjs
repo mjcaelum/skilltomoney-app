@@ -1,11 +1,38 @@
 import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { POST } from '../app/api/reserve/route.js';
+import { GET, POST } from '../app/api/reserve/route.js';
 
-const originalFetch=globalThis.fetch, originalUrl=process.env.SHEET_URL;
-afterEach(()=>{globalThis.fetch=originalFetch;if(originalUrl===undefined)delete process.env.SHEET_URL;else process.env.SHEET_URL=originalUrl;});
+const originalFetch=globalThis.fetch, originalUrl=process.env.SHEET_URL, originalKey=process.env.SHEET_KEY;
+afterEach(()=>{globalThis.fetch=originalFetch;if(originalUrl===undefined)delete process.env.SHEET_URL;else process.env.SHEET_URL=originalUrl;if(originalKey===undefined)delete process.env.SHEET_KEY;else process.env.SHEET_KEY=originalKey;});
 const valid={courseId:2,name:'김하늘',phone:'010-1111-2222',people:2};
 function request(body){return new Request('http://localhost/api/reserve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});}
+
+test('availability adds only matching sheet reservations to the initial count without exposing rows or key',async()=>{
+  process.env.SHEET_URL='https://script.google.com/macros/s/test-deployment/exec';
+  delete process.env.SHEET_KEY;
+  assert.equal((await GET()).status,503);
+  process.env.SHEET_KEY='private-key';
+  globalThis.fetch=async(url,options)=>{
+    assert.equal(url.searchParams.get('key'),'private-key');
+    assert.equal(options.cache,'no-store');
+    return Response.json([
+      {date:'2026-11-14',course:'숏폼 편집',people:1,name:'private'},
+      {date:'2026-11-14',course:'숏폼 편집',people:2},
+      {date:'2026-11-21',course:'숏폼 편집',people:4},
+    ]);
+  };
+  const response=await GET();
+  assert.equal(response.status,200);
+  assert.equal(response.headers.get('Cache-Control'),'no-store');
+  const data=await response.json();
+  assert.deepEqual(data.find(course=>course.id===2),{id:2,booked:5});
+  assert.deepEqual(data.find(course=>course.id===1),{id:1,booked:8});
+  assert.ok(!JSON.stringify(data).includes('private'));
+  for(const invalid of [{error:'key'},[{date:'2026-11-14',course:'숏폼 편집',people:-1}]]) {
+    globalThis.fetch=async()=>Response.json(invalid);
+    assert.equal((await GET()).status,502);
+  }
+});
 
 test('invalid names, seats and people never reach the sheet',async()=>{
   let calls=0;globalThis.fetch=async()=>{calls++;throw new Error('must not send');};
